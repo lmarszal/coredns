@@ -40,6 +40,8 @@ type Cache struct {
 
 	staleUpTo time.Duration
 
+	acceptNonAuthoritativeNameErrors bool
+
 	// Testing.
 	now func() time.Time
 }
@@ -48,19 +50,20 @@ type Cache struct {
 // caller to set the Next handler.
 func New() *Cache {
 	return &Cache{
-		Zones:      []string{"."},
-		pcap:       defaultCap,
-		pcache:     cache.New(defaultCap),
-		pttl:       maxTTL,
-		minpttl:    minTTL,
-		ncap:       defaultCap,
-		ncache:     cache.New(defaultCap),
-		nttl:       maxNTTL,
-		minnttl:    minNTTL,
-		prefetch:   0,
-		duration:   1 * time.Minute,
-		percentage: 10,
-		now:        time.Now,
+		Zones:                            []string{"."},
+		pcap:                             defaultCap,
+		pcache:                           cache.New(defaultCap),
+		pttl:                             maxTTL,
+		minpttl:                          minTTL,
+		ncap:                             defaultCap,
+		ncache:                           cache.New(defaultCap),
+		nttl:                             maxNTTL,
+		minnttl:                          minNTTL,
+		prefetch:                         0,
+		duration:                         1 * time.Minute,
+		percentage:                       10,
+		acceptNonAuthoritativeNameErrors: false,
+		now:                              time.Now,
 	}
 }
 
@@ -145,7 +148,10 @@ func (w *ResponseWriter) RemoteAddr() net.Addr {
 
 // WriteMsg implements the dns.ResponseWriter interface.
 func (w *ResponseWriter) WriteMsg(res *dns.Msg) error {
-	mt, _ := response.Typify(res, w.now().UTC())
+	to := response.TypifyOptions{
+		AcceptNonAuthoritativeNameErrors: w.acceptNonAuthoritativeNameErrors,
+	}
+	mt, _ := response.TypifyWithOptions(res, w.now().UTC(), to)
 
 	// key returns empty string for anything we don't want to cache.
 	hasKey, key := key(w.state.Name(), res, mt)

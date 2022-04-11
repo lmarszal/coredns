@@ -180,6 +180,18 @@ func cacheParse(c *caddy.Controller) (*Cache, error) {
 					}
 					ca.staleUpTo = d
 				}
+
+			case "accept_non_authoritative_name_errors":
+				args := c.RemainingArgs()
+				if len(args) > 1 {
+					return nil, c.ArgErr()
+				}
+				acceptNonAuthoritativeNameErrors, err := strconv.ParseBool(args[0])
+				if err != nil {
+					return nil, errors.New("invalid boolean for accept_non_authoritative_name_errors")
+				}
+				ca.acceptNonAuthoritativeNameErrors = acceptNonAuthoritativeNameErrors
+
 			default:
 				return nil, c.ArgErr()
 			}

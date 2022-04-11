@@ -53,8 +53,17 @@ func TypeFromString(s string) (Type, error) {
 	return NoError, fmt.Errorf("invalid Type: %s", s)
 }
 
+type TypifyOptions struct {
+	AcceptNonAuthoritativeNameErrors bool
+}
+
 // Typify classifies a message, it returns the Type.
 func Typify(m *dns.Msg, t time.Time) (Type, *dns.OPT) {
+	return TypifyWithOptions(m, t, TypifyOptions{})
+}
+
+// TypifyWithOptions classifies a message, it returns the Type.
+func TypifyWithOptions(m *dns.Msg, t time.Time, to TypifyOptions) (Type, *dns.OPT) {
 	if m == nil {
 		return OtherError, nil
 	}
@@ -105,7 +114,7 @@ func Typify(m *dns.Msg, t time.Time) (Type, *dns.OPT) {
 	if soa && m.Rcode == dns.RcodeSuccess {
 		return NoData, opt
 	}
-	if soa && m.Rcode == dns.RcodeNameError {
+	if (soa || to.AcceptNonAuthoritativeNameErrors) && m.Rcode == dns.RcodeNameError {
 		return NameError, opt
 	}
 
